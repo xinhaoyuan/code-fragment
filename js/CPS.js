@@ -1,6 +1,6 @@
 // A transform routine to link CPS style program
 function CPS() {
-    if (arguments.length < 2) return;
+    if (arguments.length < 2) return undefined;
     if (arguments[0] === undefined) {
         var args = Array.prototype.slice.call(arguments);
         return function () {
@@ -10,6 +10,9 @@ function CPS() {
                 .apply(undefined, pargs);
         }
     } else {
+        if (typeof arguments[0] != "function") 
+            arguments[0] = function() { }
+
         for (var i = arguments.length - 1; i > 0; -- i) {
             arguments[i] = (function (cont, func) {
                 return function() {
