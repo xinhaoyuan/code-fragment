@@ -1,6 +1,7 @@
 #!/bin/bash
 
 command -v dtach >/dev/null 2>/dev/null || { echo "dependency dtach does not reach" >&2; exit 1; }
+TERM_EMU=urxvt
 
 function usage() {
     echo
@@ -38,7 +39,18 @@ case $self in
             echo "app $appname not exists" >&2
             exit 1
         }
-        exec dtach -A /tmp/appsocket-$appname $(cat $HOME/.config/app/$appname)
+        if [ -t 0 -a -t 1 ]; then
+            exec dtach -A /tmp/appsocket-$appname $(cat $HOME/.config/app/$appname)
+        elif [ -z "$DISPLAY"]; then
+            echo "cannot open app without tty and X environment" >& 2
+            exit 1
+        else
+            command -v $TERM_EMU >/dev/null 2>/dev/null || { 
+                echo "terminal emulator $TERM_EMU not found" >&2
+                exit 1
+            }
+            exec "$TERM_EMU" -e dtach -A /tmp/appsocket-$appname $(cat $HOME/.config/app/$appname)
+        fi
         ;;
     "app:start")
         appname=$(basename "$1"); shift
