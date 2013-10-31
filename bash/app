@@ -49,7 +49,7 @@ case $self in
                 echo "terminal emulator $TERM_EMU not found" >&2
                 exit 1
             }
-            exec "$TERM_EMU" -e dtach -A /tmp/appsocket-$appname $(cat $HOME/.config/app/$appname)
+            exec "$TERM_EMU" --title "$appname" -e dtach -A /tmp/appsocket-$appname $(cat $HOME/.config/app/$appname)
         fi
         ;;
     "app:start")
