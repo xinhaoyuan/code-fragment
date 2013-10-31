@@ -7,10 +7,11 @@ function usage() {
     echo $'\tapp - manage your terminal programs as modern apps'
     echo 
     echo $'\t\tapp clean'
-    echo $'\t\tapp set  [name] [command]'
-    echo $'\t\tapp open [name]'
-    echo $'\t\tapp pid  [name]'
-    echo $'\t\tapp kill [name]'
+    echo $'\t\tapp set   [name] [command]'
+    echo $'\t\tapp open  [name]'
+    echo $'\t\tapp start [name]'
+    echo $'\t\tapp pid   [name]'
+    echo $'\t\tapp kill  [name]'
 }
 
 mkdir -p $HOME/.config/app
