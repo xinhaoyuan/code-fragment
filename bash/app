@@ -1,0 +1,53 @@
+#!/bin/bash
+
+command -v dtach >/dev/null 2>/dev/null || { echo "dependency dtach does not reach" >&2; exit 1; }
+
+function usage() {
+    echo
+    echo $'\tapp - manage your terminal programs as modern apps'
+    echo 
+    echo $'\t\tapp clean'
+    echo $'\t\tapp set  [name] [command]'
+    echo $'\t\tapp open [name]'
+    echo $'\t\tapp pid  [name]'
+    echo $'\t\tapp kill [name]'
+}
+
+mkdir -p $HOME/.config/app
+
+self=$(basename "$0")
+if [ $self = "app" ]; then
+    op=$(basename "$1"); shift
+    [ -z "$op" ] && { usage; exit 0; }
+    self="app:$op"
+fi
+
+case $self in
+    "app:clean")
+        rm -rf $HOME/.config/app
+        ;;
+    "app:set")
+        appname=$(basename "$1"); shift
+        appcmd="$*"; shift
+        echo -n "$appcmd" > $HOME/.config/app/$appname
+        ;;
+    "app:open")
+        appname=$(basename "$1"); shift
+        if [ ! -e $HOME/.config/app/$appname ]; then
+            echo "app $appname not exists"
+            exit 1;
+        fi
+        exec dtach -A /tmp/appsocket-$appname $(cat $HOME/.config/app/$appname)
+        ;;
+    "app:pid")
+        appname=$(basename $1); shift
+        exec dtach -q /tmp/appsocket-$appname
+        ;;
+    "app:kill")
+        appname=$(basename "$1"); shift
+        pid=`dtach -q /tmp/appsocket-$appname`
+        if [ -n "$pid" ]; then
+            kill `dtach -q /tmp/appsocket-$appname`
+        fi
+        ;;
+esac
