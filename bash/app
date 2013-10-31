@@ -33,21 +33,37 @@ case $self in
         ;;
     "app:open")
         appname=$(basename "$1"); shift
-        if [ ! -e $HOME/.config/app/$appname ]; then
-            echo "app $appname not exists"
-            exit 1;
-        fi
+        [ -e $HOME/.config/app/$appname ] || {
+            echo "app $appname not exists" >&2
+            exit 1
+        }
         exec dtach -A /tmp/appsocket-$appname $(cat $HOME/.config/app/$appname)
+        ;;
+    "app:start")
+        appname=$(basename "$1"); shift
+        [ -e $HOME/.config/app/$appname ] || {
+            echo "app $appname not exists" >&2
+            exit 1
+        }
+        exec dtach -n /tmp/appsocket-$appname $(cat $HOME/.config/app/$appname)
         ;;
     "app:pid")
         appname=$(basename $1); shift
-        exec dtach -q /tmp/appsocket-$appname
+        [ -e $HOME/.config/app/$appname ] || {
+            echo "app $appname not exists" >&2
+            exit 1
+        }
+        exec dtach -q /tmp/appsocket-$appname >&2
         ;;
     "app:kill")
         appname=$(basename "$1"); shift
+        [ -e $HOME/.config/app/$appname ] || {
+            echo "app $appname not exists" >&2
+            exit 1
+        }
         pid=`dtach -q /tmp/appsocket-$appname`
         if [ -n "$pid" ]; then
-            kill `dtach -q /tmp/appsocket-$appname`
+            kill "$pid"
         fi
         ;;
 esac
