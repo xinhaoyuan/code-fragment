@@ -1,11 +1,11 @@
 // A simple streaming utf8 to unicode converter
 (function() {
-    this.UTF8Stream = function() {
+    var UTF8Stream = function() {
         this.blen  = 0;
         this.buf   = 0;
         this.error = false;
     };
-    this.UTF8Stream.prototype = {
+    UTF8Stream.prototype = {
         resume: function() { this.blen = 0; this.buf = 0; this.error = false; },
         writeByte : function(b) {
             if (this.error) {
@@ -49,4 +49,5 @@
                 this.writeByte(arr[i]);
         }
     };
+    this.UTF8Stream = UTF8Stream;
 }).call(utf8stream = {});
