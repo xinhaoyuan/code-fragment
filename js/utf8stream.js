@@ -1,46 +1,54 @@
 // A simple streaming utf8 to unicode converter
 (function() {
     var UTF8Stream = function() {
-        this.blen  = 0;
-        this.buf   = 0;
-        this.error = false;
+        UTF8Stream.prototype.reset.call(this);
     };
     UTF8Stream.prototype = {
-        resume: function() { this.blen = 0; this.buf = 0; this.error = false; },
+        reset: function() { 
+            this._blen = 0;
+            this._vbuf = 0;
+            this._error = false;
+            this._fbuf = [];
+        },
+        unwind : function() {
+            return this._fbuf;
+        },
         writeByte : function(b) {
-            if (this.error) {
+            this._fbuf.push(b);
+            if (this._error) {
                 if ("onerror" in this) this.onerror("error not resumed");
-            } else if (
-                typeof b != 'number' ||
-                    b % 1 != 0 ||
-                    b > 0xFF) {
-                this.error = true;
+            } else if (typeof b != 'number' ||
+                       b % 1 != 0 ||
+                       b > 0xFF) {
+                this._error = true;
                 if ("onerror" in this) this.onerror("not a byte integer");
-            } else if (this.blen == 0) {
+            } else if (this._blen == 0) {
                 if ((b & 0x80) == 0) {
-                    this.onvalue(b);
+                    this._fbuf = [];
+                    if ("onvalue" in this) this.onvalue(b);
                 } else if ((b & 0xE0) == 0xC0) {
-                    this.blen = 1;
-                    this.buf = b & 0x1F;
+                    this._blen = 1;
+                    this._vbuf = b & 0x1F;
                 } else if ((b & 0xF0) == 0xE0) {
-                    this.blen = 2;
-                    this.buf = b & 0x0F;
+                    this._blen = 2;
+                    this._vbuf = b & 0x0F;
                 } else if ((b & 0xF8) == 0xF0) {
-                    this.blen = 3;
-                    this.buf = b & 0x07;
+                    this._blen = 3;
+                    this._vbuf = b & 0x07;
                 } else {
-                    this.error = true;
+                    this._error = true;
                     if ("onerror" in this) this.onerror("invalid head format");
                 }
             } else if ((b & 0xC0) == 0x80) {
-                this.buf = (this.buf << 6) | (b & 0x3F);
-                if (-- this.blen == 0) {
-                    var v = this.buf;
-                    this.buf = 0;
+                this._vbuf = (this._vbuf << 6) | (b & 0x3F);
+                if (-- this._blen == 0) {
+                    var v = this._vbuf;
+                    this._vbuf = 0;
+                    this._fbuf = [];
                     if ("onvalue" in this) this.onvalue(v);
                 }
             } else {
-                this.error = true;
+                this._error = true;
                 if ("onerror" in this) this.onerror("invalid body format");
             }
         },
