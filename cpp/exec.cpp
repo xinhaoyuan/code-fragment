@@ -25,7 +25,7 @@ fork_and_exec(char **argv, int fd_in, int fd_out, int fd_err) {
     if (ret == 0) {
         if (fd_in != STDIN_FILENO) {
             if (fd_in < 0)
-                fd_in = open("/dev/null/", O_RDONLY);
+                fd_in = open("/dev/null", O_RDONLY);
             if (dup2(fd_in, STDIN_FILENO) < 0)
                 _exit(-1);
             close(fd_in);
