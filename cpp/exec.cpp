@@ -23,16 +23,15 @@ fork_and_exec(char **argv, int fd_in, int fd_out, int fd_err) {
     pid_t ret = fork();
     if (ret < 0) return ret;
     if (ret == 0) {
-        int fd_null = open("/dev/null", O_WRONLY);
         if (fd_in != STDIN_FILENO) {
             if (fd_in < 0)
-                fd_in = fd_null;
+                fd_in = open("/dev/null/", O_RDONLY);
             if (dup2(fd_in, STDIN_FILENO) < 0)
                 _exit(-1);
-            if (fd_in != fd_null)
-                close(fd_in);
+            close(fd_in);
         }
 
+        int fd_null = open("/dev/null", O_WRONLY);
         if (fd_out != STDOUT_FILENO) {
             if (fd_out < 0)
                 fd_out = fd_null;
@@ -60,7 +59,8 @@ fork_and_exec(char **argv, int fd_in, int fd_out, int fd_err) {
     }
 }
 
-int execute_and_gether(char **argv, const std::string &input, std::string &output) {
+int
+execute_and_gather(char **argv, const std::string &input, std::string &output) {
     int in_pfd[2];
     int out_pfd[2];
     int ep;
@@ -116,25 +116,26 @@ int execute_and_gether(char **argv, const std::string &input, std::string &outpu
             if (n != 1) continue;
             if (eev.data.fd == out_pfd[0]) {
                 if (!(eev.events & EPOLLIN)) {
-                    err = -1;
-                    goto onerr;
+                    err = 0;
+                    goto succ;
                 }
                 // read
                 while (true) {
                     s = read(out_pfd[0], buf, 1024);
-                    if (s == -EAGAIN) break;
-                    else if (s == 0) goto succ;
-                    else if (s < 0) {
+                    if (s == 0) goto succ;
+                    else if (s == -1) {
+                        err = -errno;
+                        if (err == -EAGAIN || errno == -EINTR) break;
+                        goto onerr;
+                    } else if (s < 0) {
                         err = s;
                         goto onerr;
                     }
                     ss.write(buf, s);
                 }
             } else if (eev.data.fd == in_pfd[1]) {
-                if (eev.events & EPOLLERR ||
-                    eev.events & EPOLLHUP)
+                if (!(eev.events & EPOLLOUT))
                     continue;
-                assert(eev.events & EPOLLOUT);
                 // write
                 while (out_off < input.length()) {
                     s = input.length() - out_off;
@@ -164,7 +165,7 @@ int execute_and_gether(char **argv, const std::string &input, std::string &outpu
 }
 
 int
-execute_and_gether(const std::vector<std::string> &args, const std::string &input, std::string &output) {
+execute_and_gather(const std::vector<std::string> &args, const std::string &input, std::string &output) {
     size_t buf_len = 0;
     for (int i = 0; i < args.size(); ++ i) {
         buf_len += args[i].length() + 1;
@@ -181,7 +182,7 @@ execute_and_gether(const std::vector<std::string> &args, const std::string &inpu
     }
     argv[args.size()] = NULL;
 
-    int r = execute_and_gether(argv, input, output);
+    int r = execute_and_gather(argv, input, output);
     
     delete[] buf;
     delete[] argv;
@@ -195,10 +196,9 @@ main(int argc, char **argv) {
     assert(argv[argc] == NULL);
     
     std::string i, o;
-    i = "Hello World";
+    i = "";
     std::vector<std::string> args;
-    args.push_back("/bin/cat");
-    execute_and_gether(args, i, o);
+    execute_and_gather(argv + 1, i, o);
     std::cout << o;
 
     return 0;
