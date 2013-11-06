@@ -122,8 +122,10 @@ execute_and_gather(char **argv, const std::string &input, std::string &output) {
                 // read
                 while (true) {
                     s = read(out_pfd[0], buf, 1024);
-                    if (s == 0) goto succ;
-                    else if (s == -1) {
+                    if (s == 0) {
+                        err = 0;
+                        goto succ;
+                    } else if (s == -1) {
                         err = -errno;
                         if (err == -EAGAIN || errno == -EINTR) break;
                         goto onerr;
